@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             targetNamespace="http://example.com/hello">
+
+  <process id="helloProcess" name="Hello World Process" isExecutable="true">
+    <startEvent id="start" name="Mulai"/>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="helloTask"/>
+    <serviceTask id="helloTask" name="Cetak Hello World"
+                 flowable:delegateExpression="${helloDelegate}"/>
+    <sequenceFlow id="f2" sourceRef="helloTask" targetRef="end"/>
+    <endEvent id="end" name="Selesai"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="diagram">
+    <bpmndi:BPMNPlane id="plane" bpmnElement="helloProcess">
+      <bpmndi:BPMNShape id="s_start" bpmnElement="start">
+        <omgdc:Bounds x="100" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_task" bpmnElement="helloTask">
+        <omgdc:Bounds x="190" y="78" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_end" bpmnElement="end">
+        <omgdc:Bounds x="340" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="e_f1" bpmnElement="f1">
+        <omgdi:waypoint x="136" y="118"/>
+        <omgdi:waypoint x="190" y="118"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f2" bpmnElement="f2">
+        <omgdi:waypoint x="290" y="118"/>
+        <omgdi:waypoint x="340" y="118"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
