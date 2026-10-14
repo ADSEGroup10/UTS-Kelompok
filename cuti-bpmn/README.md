@@ -1,8 +1,10 @@
 # Use Case: Pengajuan Cuti dengan BPMN, Spring Boot, dan Flowable
 
-Tugas 3: membuat model proses bisnis dengan BPMN, lalu menjalankannya sebagai aplikasi Java.
+Tugas 3 Kelompok 10: membuat model proses bisnis dengan BPMN, lalu menjalankannya sebagai aplikasi Java.
 
-- **Nama / NIM:** (isi)
+- **Nama / NIM:** Ryan Fazli Mawla/12409011010016
+                  Muhammad Haekal/12409011030051
+                  Muhammad Naqib Muhtadi/12409011050134
 - **Mata kuliah:** (isi)
 - **Tools:** Java, Maven, Spring Boot 3.4.x, Flowable 7.2.0, H2 (file), bpmn.io (modeler)
 
