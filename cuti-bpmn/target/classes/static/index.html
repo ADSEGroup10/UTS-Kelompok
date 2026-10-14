@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pengajuan Cuti - BPMN</title>
+<style>
+  :root { --garis: #d9dde3; --teks: #1f2933; --abu: #6b7280; }
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; color: var(--teks); background: #f7f8fa; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .sub { color: var(--abu); margin-top: 0; }
+  section { background: #fff; border: 1px solid var(--garis); border-radius: 10px; padding: 16px 18px; margin: 16px 0; }
+  h2 { font-size: 1.05rem; margin: 0 0 8px; }
+  label { display: block; margin: 10px 0 3px; font-size: .88rem; color: var(--abu); }
+  input { padding: 8px 10px; width: 100%; box-sizing: border-box; border: 1px solid var(--garis); border-radius: 6px; font-size: .95rem; }
+  button { padding: 8px 16px; margin: 12px 8px 0 0; cursor: pointer; border: 1px solid var(--garis); border-radius: 6px; background: #fff; font-size: .9rem; }
+  button:hover { background: #f0f2f5; }
+  button.utama { background: #2563eb; color: #fff; border-color: #2563eb; }
+  button.setuju { background: #16a34a; color: #fff; border-color: #16a34a; }
+  button.tolak { background: #dc2626; color: #fff; border-color: #dc2626; }
+  .kosong { color: var(--abu); margin: 12px 0 0; }
+  .kartu, .tugas { border: 1px solid var(--garis); border-radius: 8px; padding: 12px 14px; margin-top: 14px; background: #fafbfc; }
+  .kartu .judul, .tugas .judul { font-weight: 600; margin-bottom: 4px; }
+  .baris { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: .93rem; }
+  .baris span:first-child, .tugas .detail { color: var(--abu); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .82rem; font-weight: 600; }
+  .menunggu { background: #fef3c7; color: #92400e; }
+  .disetujui { background: #dcfce7; color: #166534; }
+  .ditolak { background: #fee2e2; color: #991b1b; }
+  .tugas .detail { font-size: .9rem; margin-top: 2px; }
+  .galat { color: #991b1b; margin-top: 12px; }
+  .logout-form { display: inline; }
+  .sembunyi { display: none; }
+  .login input { max-width: 360px; }
+</style>
+</head>
+<body>
+<h1>Pengajuan Cuti</h1>
+<p class="sub">Masuk menggunakan akun aplikasi. <span id="identitas"></span>
+  <form id="formLogout" class="logout-form sembunyi" action="/logout" method="post">
+    <button type="submit">Logout</button>
+  </form>
+</p>
+<div id="galatAwal"></div>
+
+<section id="bagianLogin" class="login">
+  <h2>Login</h2>
+  <p id="pesanLogin" class="sub">Masukkan username dan password demo.</p>
+  <form action="/login" method="post">
+    <label for="username">Username</label>
+    <input id="username" name="username" autocomplete="username" required>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button class="utama" type="submit">Login</button>
+  </form>
+</section>
+
+<section id="bagianKaryawan" class="sembunyi">
+  <h2>Karyawan: ajukan dan lihat cuti</h2>
+  <label for="hari">Jumlah hari</label><input id="hari" type="number" min="1" value="3">
+  <label for="alasan">Alasan</label><input id="alasan" value="Acara keluarga">
+  <button class="utama" onclick="ajukan()">Ajukan</button>
+  <div id="hasilAjuan"></div>
+  <h2 style="margin-top: 20px">Riwayat pengajuan</h2>
+  <button onclick="muatPengajuan()">Muat ulang riwayat</button>
+  <div id="riwayat"></div>
+</section>
+
+<section id="bagianAtasan" class="sembunyi">
+  <h2>Atasan: persetujuan user task</h2>
+  <button onclick="muatTugas()">Muat ulang daftar tugas</button>
+  <div id="daftar"></div>
+  <div id="hasilKeputusan"></div>
+</section>
+
+<script>
+const LABEL = {
+  MENUNGGU_PERSETUJUAN_ATASAN: ['Menunggu persetujuan atasan', 'menunggu'],
+  DISETUJUI: ['Disetujui', 'disetujui'],
+  DITOLAK: ['Ditolak', 'ditolak']
+};
+
+function el(tag, kelas, teks) {
+  const e = document.createElement(tag);
+  if (kelas) e.className = kelas;
+  if (teks !== undefined) e.textContent = teks;
+  return e;
+}
+
+function baris(kunci, nilai) {
+  const b = el('div', 'baris');
+  b.appendChild(el('span', null, kunci));
+  b.appendChild(nilai instanceof Node ? nilai : el('span', null, nilai));
+  return b;
+}
+
+function tampilkanHasil(wadah, data, judul) {
+  wadah.textContent = '';
+  const kartu = el('div', 'kartu');
+  if (judul) kartu.appendChild(el('div', 'judul', judul));
+  const [teks, kelas] = LABEL[data.status] || [data.status, ''];
+  kartu.appendChild(baris('Pemohon', data.pemohon || '-'));
+  kartu.appendChild(baris('Status', el('span', 'badge ' + kelas, teks)));
+  if (data.catatan) kartu.appendChild(baris('Catatan', data.catatan));
+  if (data.sisaCuti !== undefined) kartu.appendChild(baris('Sisa cuti', data.sisaCuti + ' hari'));
+  kartu.appendChild(baris('No. pengajuan', String(data.processInstanceId).substring(0, 8)));
+  wadah.appendChild(kartu);
+}
+
+function tampilkanGalat(wadah, pesan) {
+  wadah.textContent = '';
+  wadah.appendChild(el('div', 'galat', pesan));
+}
+
+async function jsonFetch(url, options) {
+  const res = await fetch(url, Object.assign({}, options, {
+    cache: 'no-store',
+    credentials: 'same-origin'
+  }));
+  if (!res.ok) throw new Error('Server menjawab ' + res.status);
+  return res.json();
+}
+
+function resetUi() {
+  document.getElementById('bagianLogin').classList.remove('sembunyi');
+  document.getElementById('bagianKaryawan').classList.add('sembunyi');
+  document.getElementById('bagianAtasan').classList.add('sembunyi');
+  document.getElementById('formLogout').classList.add('sembunyi');
+  document.getElementById('identitas').textContent = '';
+}
+
+async function ajukan() {
+  const wadah = document.getElementById('hasilAjuan');
+  const hari = Number(document.getElementById('hari').value);
+  if (!(hari >= 1)) { tampilkanGalat(wadah, 'Isi jumlah hari minimal 1.'); return; }
+  try {
+    const data = await jsonFetch('/api/cuti', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jumlahHari: hari, alasan: document.getElementById('alasan').value })
+    });
+    tampilkanHasil(wadah, data, 'Pengajuan diterima');
+    muatPengajuan();
+  } catch (e) { tampilkanGalat(wadah, 'Gagal mengajukan: ' + e.message); }
+}
+
+async function muatPengajuan() {
+  const box = document.getElementById('riwayat');
+  box.textContent = '';
+  try {
+    const data = await jsonFetch('/api/cuti');
+    if (data.length === 0) { box.appendChild(el('p', 'kosong', 'Belum ada pengajuan.')); return; }
+    data.forEach(item => {
+      const kartu = el('div', 'kartu');
+      kartu.appendChild(el('div', 'judul', 'Pengajuan ' + String(item.processInstanceId).substring(0, 8)));
+      const [teks, kelas] = LABEL[item.status] || [item.status, ''];
+      kartu.appendChild(baris('Status', el('span', 'badge ' + kelas, teks)));
+      if (item.catatan) kartu.appendChild(baris('Catatan', item.catatan));
+      kartu.appendChild(baris('Sisa cuti', item.sisaCuti + ' hari'));
+      box.appendChild(kartu);
+    });
+  } catch (e) { tampilkanGalat(box, 'Gagal memuat riwayat: ' + e.message); }
+}
+
+async function muatTugas() {
+  const box = document.getElementById('daftar');
+  box.textContent = '';
+  try {
+    const data = await jsonFetch('/api/tugas');
+    if (data.length === 0) { box.appendChild(el('p', 'kosong', 'Tidak ada tugas menunggu.')); return; }
+    data.forEach(t => {
+      const div = el('div', 'tugas');
+      div.appendChild(el('div', 'judul', t.pemohon + ' meminta cuti ' + t.jumlahHari + ' hari'));
+      div.appendChild(el('div', 'detail', 'Alasan: ' + (t.alasan || '-') + ' | Sisa cuti: ' + t.sisaCuti + ' hari'));
+      const s = el('button', 'setuju', 'Setujui'); s.onclick = () => putuskan(t.id, true);
+      const k = el('button', 'tolak', 'Tolak'); k.onclick = () => putuskan(t.id, false);
+      div.appendChild(s); div.appendChild(k); box.appendChild(div);
+    });
+  } catch (e) { tampilkanGalat(box, 'Gagal memuat tugas: ' + e.message); }
+}
+
+async function putuskan(id, disetujui) {
+  const wadah = document.getElementById('hasilKeputusan');
+  try {
+    const data = await jsonFetch('/api/tugas/' + id + '/selesai?disetujui=' + disetujui, { method: 'POST' });
+    tampilkanHasil(wadah, data, 'Keputusan atasan tersimpan');
+    muatTugas();
+  } catch (e) { tampilkanGalat(wadah, 'Gagal menyimpan keputusan: ' + e.message); }
+}
+
+async function mulai() {
+  resetUi();
+  try {
+    const me = await jsonFetch('/api/me');
+    document.getElementById('bagianLogin').classList.add('sembunyi');
+    document.getElementById('identitas').textContent = 'Login sebagai ' + me.username + ' (' + me.role + ').';
+    document.getElementById('formLogout').classList.remove('sembunyi');
+    if (me.role === 'karyawan') {
+      document.getElementById('bagianKaryawan').classList.remove('sembunyi');
+      muatPengajuan();
+    } else if (me.role === 'atasan') {
+      document.getElementById('bagianAtasan').classList.remove('sembunyi');
+      muatTugas();
+    }
+  } catch (e) {
+    const params = new URLSearchParams(window.location.search);
+    const pesan = params.get('login') === 'error'
+      ? 'Username atau password salah.'
+      : params.get('logout') === 'success'
+        ? 'Logout berhasil. Silakan login kembali.'
+      : 'Login diperlukan untuk mengajukan atau meninjau cuti.';
+    document.getElementById('pesanLogin').textContent = pesan;
+  }
+}
+
+mulai();
+
+window.addEventListener('pageshow', event => {
+  if (event.persisted) {
+    mulai();
+  }
+});
+</script>
+</body>
+</html>

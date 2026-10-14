@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             targetNamespace="http://example.com/cuti">
+
+  <process id="pengajuanCuti" name="Proses Pengajuan Cuti" isExecutable="true">
+
+    <startEvent id="start" name="Pengajuan Diterima" flowable:initiator="nama"/>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="validasiCuti"/>
+
+    <serviceTask id="validasiCuti" name="Validasi Sisa Cuti"
+                 flowable:delegateExpression="${validasiCutiDelegate}"/>
+    <sequenceFlow id="f2" sourceRef="validasiCuti" targetRef="gwSisa"/>
+
+    <exclusiveGateway id="gwSisa" name="Sisa cuti cukup?" default="f4"/>
+    <sequenceFlow id="f3" name="ya" sourceRef="gwSisa" targetRef="persetujuanAtasan">
+      <conditionExpression xsi:type="tFormalExpression">${valid == true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f4" name="tidak" sourceRef="gwSisa" targetRef="tolakOtomatis"/>
+
+    <userTask id="persetujuanAtasan" name="Persetujuan Atasan" flowable:candidateGroups="atasan"/>
+    <sequenceFlow id="f5" sourceRef="persetujuanAtasan" targetRef="gwKeputusan"/>
+
+    <exclusiveGateway id="gwKeputusan" name="Disetujui?" default="f7"/>
+    <sequenceFlow id="f6" name="ya" sourceRef="gwKeputusan" targetRef="notifDisetujui">
+      <conditionExpression xsi:type="tFormalExpression">${disetujui == true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f7" name="tidak" sourceRef="gwKeputusan" targetRef="notifDitolak"/>
+
+    <serviceTask id="notifDisetujui" name="Kurangi Sisa Cuti &amp; Notifikasi Disetujui"
+                 flowable:delegateExpression="${notifikasiDisetujuiDelegate}"/>
+    <serviceTask id="notifDitolak" name="Notifikasi Ditolak"
+                 flowable:delegateExpression="${notifikasiDitolakDelegate}"/>
+    <serviceTask id="tolakOtomatis" name="Tolak Otomatis"
+                 flowable:delegateExpression="${tolakOtomatisDelegate}"/>
+
+    <sequenceFlow id="f8" sourceRef="notifDisetujui" targetRef="end"/>
+    <sequenceFlow id="f9" sourceRef="notifDitolak" targetRef="end"/>
+    <sequenceFlow id="f10" sourceRef="tolakOtomatis" targetRef="end"/>
+
+    <endEvent id="end" name="Selesai"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="diagram">
+    <bpmndi:BPMNPlane id="plane" bpmnElement="pengajuanCuti">
+      <bpmndi:BPMNShape id="s_start" bpmnElement="start">
+        <omgdc:Bounds x="80" y="182" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_validasi" bpmnElement="validasiCuti">
+        <omgdc:Bounds x="170" y="160" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_gw1" bpmnElement="gwSisa" isMarkerVisible="true">
+        <omgdc:Bounds x="320" y="175" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_atasan" bpmnElement="persetujuanAtasan">
+        <omgdc:Bounds x="440" y="160" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_gw2" bpmnElement="gwKeputusan" isMarkerVisible="true">
+        <omgdc:Bounds x="590" y="175" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_setuju" bpmnElement="notifDisetujui">
+        <omgdc:Bounds x="710" y="160" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_tolakotomatis" bpmnElement="tolakOtomatis">
+        <omgdc:Bounds x="440" y="300" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_tolak" bpmnElement="notifDitolak">
+        <omgdc:Bounds x="710" y="300" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="s_end" bpmnElement="end">
+        <omgdc:Bounds x="900" y="182" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="e_f1" bpmnElement="f1">
+        <omgdi:waypoint x="116" y="200"/><omgdi:waypoint x="170" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f2" bpmnElement="f2">
+        <omgdi:waypoint x="270" y="200"/><omgdi:waypoint x="320" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f3" bpmnElement="f3">
+        <omgdi:waypoint x="370" y="200"/><omgdi:waypoint x="440" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f4" bpmnElement="f4">
+        <omgdi:waypoint x="345" y="225"/><omgdi:waypoint x="345" y="340"/><omgdi:waypoint x="440" y="340"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f5" bpmnElement="f5">
+        <omgdi:waypoint x="540" y="200"/><omgdi:waypoint x="590" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f6" bpmnElement="f6">
+        <omgdi:waypoint x="640" y="200"/><omgdi:waypoint x="710" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f7" bpmnElement="f7">
+        <omgdi:waypoint x="615" y="225"/><omgdi:waypoint x="615" y="340"/><omgdi:waypoint x="710" y="340"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f8" bpmnElement="f8">
+        <omgdi:waypoint x="810" y="200"/><omgdi:waypoint x="900" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f9" bpmnElement="f9">
+        <omgdi:waypoint x="810" y="340"/><omgdi:waypoint x="918" y="340"/><omgdi:waypoint x="918" y="218"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e_f10" bpmnElement="f10">
+        <omgdi:waypoint x="490" y="380"/><omgdi:waypoint x="490" y="420"/><omgdi:waypoint x="918" y="420"/><omgdi:waypoint x="918" y="218"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
